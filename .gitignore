@@ -1,0 +1,80 @@
+# ====================
+# Django 项目通用忽略
+# ====================
+*.pyc
+__pycache__/
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
+
+# ====================
+# 数据库与日志文件
+# ====================
+db.sqlite3
+*.log
+*.pot
+*.po
+*.mo
+
+# ====================
+# 环境配置与密钥
+# ====================
+*.env
+!production.env
+.venv/
+env/
+venv/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ====================
+# 静态文件与媒体文件
+# ====================
+staticfiles/
+media/
+
+# ====================
+# 缓存与临时文件
+# ====================
+cache/
+temp/
+*.orig
+*.bak
+*.tmp
+
+# ====================
+# 编译与打包文件
+# ====================
+dist/
+build/
+*.egg-info/
+pip-wheel-metadata/
+
+# ====================
+# 测试与覆盖报告
+# ====================
+.tox/
+.coverage
+htmlcov/
+coverage.xml
+
+# ====================
+# CI/CD 配置文件
+# ====================
+*.egg
+*.egg-info
+.coverage
+nosetests.xml
+coverage.xml
+.jenkins/
+.gitlab-ci.yml
+
+# ====================
+# 自定义忽略 (根据项目需求添加)
+# ====================
+# 例如：
+# myapp/sensitive_data/
+# uploads/
