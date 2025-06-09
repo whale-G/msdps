@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Users
@@ -40,10 +40,12 @@ class UserRegister(APIView):
             # 基础正则校验密码（8-16位，包含大小写和数字，允许特殊字符）
             if not re.match(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d!@#$%^&*()]{8,16}$', user_password):
                 return Response({'code': 400, 'message': '密码不符合要求'})
-            # 加密密码
-            user_password = make_password(user_password)
-            # 存入数据库
-            Users.objects.create(user_account=user_account, password=user_password)
+
+            # 使用create_user创建用户（自动处理密码哈希）
+            Users.objects.create_user(
+                user_account=user_account,
+                password=user_password      # 传入明文密码
+            )
 
             return Response({"status": "success", "message": "注册成功"})
 
@@ -53,7 +55,7 @@ class UserRegister(APIView):
 
 # 用户登录
 class UserLogin(APIView):
-    parser_classes = [JSONParser]
+    parser_classes = [JSONParser, MultiPartParser]
 
     def post(self, request):
         try:
@@ -80,12 +82,13 @@ class UserLogin(APIView):
             return Response({
                 "status": "success",
                 "message": "登录成功",
-                "access": str(refresh.access_token),  # 短期Token
-                "refresh": str(refresh)  # 长期Token（用于刷新）
+                "access": str(refresh.access_token),    # 短期Token
+                "refresh": str(refresh),                # 长期Token（用于刷新）
+                "force_password_change": user.force_password_change  # 返回强制修改密码标志
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(e)
+            return Response({"status": "error", "message": str(e)})
 
 
 # 修改密码
@@ -112,9 +115,18 @@ class ChangePassword(APIView):
                 return Response({'code': 400, 'message': '密码不符合要求'})
             # 更新密码并保存
             user.password = make_password(new_password)
+
+            # 如果是强制修改密码，清除标志
+            if user.force_password_change:
+                user.force_password_change = False
+
             user.save()
 
-        except Exception as e:
-            print(e)
+            return Response({
+                "status": "success",
+                "message": "密码修改成功",
+                "force_password_change": user.force_password_change  # 返回更新后的状态
+            }, status=status.HTTP_200_OK)
 
-        return Response({"status": "success", "message": "密码修改成功"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)})

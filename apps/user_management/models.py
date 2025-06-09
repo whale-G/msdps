@@ -1,7 +1,37 @@
 # 自定义用户模型
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 import uuid
+
+
+# 自定义管理器
+class CustomUserManager(BaseUserManager):
+    def create_superuser(self, user_account, password, **extra_fields):
+        # 设置管理员标志
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('force_password_change', True)  # 添加强制修改密码标志
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('超级用户必须设置 is_staff=True')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('超级用户必须设置 is_superuser=True')
+
+        return self.create_user(user_account, password, **extra_fields)
+
+    def create_user(self, user_account, password=None, **extra_fields):
+        if not user_account:
+            raise ValueError('必须提供用户账号！')
+
+        user = self.model(
+            user_account=user_account,
+            **extra_fields
+        )
+        # 自动哈希
+        user.set_password(password)
+        # 保存到数据库
+        user.save(using=self._db)
+        return user
 
 
 class Users(AbstractUser):
@@ -20,6 +50,9 @@ class Users(AbstractUser):
     user_account = models.CharField(max_length=50, unique=True)
     # 密码字段使用默认的password
 
+    # 强制修改密码标志
+    force_password_change = models.BooleanField(default=False)
+
     # 数据插入时间
     created_at = models.DateTimeField(auto_now_add=True)
     # 逻辑删除
@@ -33,6 +66,9 @@ class Users(AbstractUser):
 
     # 自动清理标志
     needs_cleaning = False  # 标记该模型不需要自动清理
+
+    # 使用自定义管理器
+    objects = CustomUserManager()
 
     class Meta:
         db_table = 'users'    # 手动指定数据库表名

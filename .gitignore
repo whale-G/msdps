@@ -21,12 +21,10 @@ db.sqlite3
 # ====================
 # 环境配置与密钥
 # ====================
-*.env
-!production.env
+.env
+.env.production
+.env.development
 .venv/
-env/
-venv/
-ENV/
 pip-log.txt
 pip-delete-this-directory.txt
 

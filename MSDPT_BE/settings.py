@@ -18,18 +18,32 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# 加载基础环境变量
+load_dotenv(BASE_DIR / '.env')
+
+# 根据环境加载特定配置
+ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development')
+if ENVIRONMENT == 'production':
+    load_dotenv(BASE_DIR / '.env.production', override=True)
+else:
+    load_dotenv(BASE_DIR / '.env.development', override=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-6jr)-am1g770d7eti!9)e09_5o%b004ar#5@c3(ppg56dtufre"
+SECRET_KEY = os.environ.get('SECRET_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# 确保生产环境中DEBUG为False
+if ENVIRONMENT == 'production' and DEBUG:
+    raise ValueError("在生产环境中DEBUG必须为False")
 
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+if ENVIRONMENT == 'production' and not ALLOWED_HOSTS:
+    raise ValueError("在生产环境中ALLOWED_HOSTS必须设置")
 
 # Application definition
 
@@ -82,7 +96,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "MSDPT_BE.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -93,18 +106,17 @@ DATABASES = {
     # }
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "django_db",
-        "USER": "root",
-        "PASSWORD": "123456",
-        "HOST": "192.168.161.15",
-        "PORT": "3306",
+        "NAME": os.getenv('DB_NAME', "django_db"),
+        "USER": os.getenv('DB_USER', "root"),
+        "PASSWORD": os.getenv('DB_PASSWORD', "123456"),
+        "HOST": os.getenv('DB_HOST', "192.168.161.15"),
+        "PORT": os.getenv('DB_PORT', "3306"),
         "OPTIONS": {
             "charset": "utf8mb4",
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -124,26 +136,81 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# 日志应用配置
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'scheduler': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-        'apscheduler': {
-            'handlers': ['console'],
-            'level': 'INFO',
+# 基础日志配置（公共部分）
+LOGGING_BASE = {
+    'version': 1,                       # 日志配置版本（目前固定为1）
+    'disable_existing_loggers': False,  # 不关闭Django默认的日志器
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s'    # 详细日志格式
         },
     },
 }
+
+# 开发环境日志配置
+if ENVIRONMENT == 'development':
+    LOGGING = {
+        **LOGGING_BASE,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            'django': {                     # Django核心日志器
+                'handlers': ['console'],    # 输出到控制台
+                'level': 'WARNING',           # 记录DEBUG及以上级别（开发环境更详细）
+            },
+            'scheduler': {                  # 自定义的scheduler日志器
+                'handlers': ['console'],
+                'level': 'DEBUG',
+            },
+            'apscheduler': {                # APScheduler定时任务日志器
+                'handlers': ['console'],
+                'level': 'DEBUG',
+            },
+            # 调试SQL查询（开发调试用）
+            'django.db.backends': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+                'propagate': False,
+            },
+        },
+    }
+# 生产环境日志配置
+else:
+    LOGGING = {
+        **LOGGING_BASE,
+        'handlers': {
+            'file': {
+                'class': 'logging.handlers.RotatingFileHandler',    # 轮转文件处理器（自动切割大文件）
+                'filename': BASE_DIR / 'logs' / 'django.log',       # 日志文件路径（项目根目录/logs/django.log）
+                'maxBytes': 1024 * 1024 * 5,                        # 单个日志文件最大5MB
+                'backupCount': 5,                                   # 最多保留5个历史日志文件
+                'formatter': 'verbose',                             # 使用verbose格式器
+            },
+        },
+        'loggers': {
+            'django': {                 # Django核心日志器
+                'handlers': ['file'],   # 写入文件
+                'level': 'INFO',        # 记录INFO及以上级别日志
+            },
+            'scheduler': {
+                'handlers': ['file'],
+                'level': 'INFO',
+                'propagate': False,     # 不传递日志（避免重复记录）
+            },
+            'apscheduler': {
+                'handlers': ['file'],
+                'level': 'INFO',
+                'propagate': False,     # 不传递日志（避免重复记录）
+            },
+        },
+    }
+# 确保生产环境日志目录存在
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True, parents=True)
 
 # JWT配置（DRF）
 REST_FRAMEWORK = {
@@ -151,30 +218,26 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',    # JWT认证
     )
 }
-# JWT设置
-from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),    # token有效期
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),    # 刷新token有效期
-    'USER_ID_FIELD': 'uuid',     # 指定模型中的字段名称
-    'USER_ID_CLAIM': 'uuid',     # 对应token负载中的字段名
+    'ACCESS_TOKEN_LIFETIME': timedelta(
+        minutes=int(os.environ.get('JWT_ACCESS_MINUTES', 30))
+    ),          # token有效期
+    'REFRESH_TOKEN_LIFETIME': timedelta(
+        days=int(os.environ.get('JWT_REFRESH_DAYS', 1))
+    ),          # 刷新token有效期
+    'USER_ID_FIELD': 'uuid',            # 指定模型中的字段名称
+    'USER_ID_CLAIM': 'uuid',            # 对应token负载中的字段名
     'AUTH_HEADER_TYPES': ('Bearer',),   # token头部
 }
 
 # 指定使用自定义用户模型
 AUTH_USER_MODEL = 'user_management.Users'
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
-LANGUAGE_CODE = "zh-hans"
-
-TIME_ZONE = "Asia/Shanghai"
-
-USE_I18N = True
-
-USE_TZ = True
-
+# 跨域设置
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:8080').split(',')
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -186,9 +249,13 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# 允许所有域名跨域（开发阶段临时设置）
-CORS_ALLOW_ALL_ORIGINS = True
+# 管理员账号配置
+ADMIN_ACCOUNT = os.getenv('ADMIN_ACCOUNT', 'admin')
+ADMIN_INITIAL_PASSWORD = os.getenv('ADMIN_INITIAL_PASSWORD', 'Admin123')
 
-# 文件上传大小限制（按需调整）
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+# 配置验证（开发阶段）
+# print(f"\n\n当前环境: {ENVIRONMENT}")
+# print(f"DEBUG 模式: {DEBUG}")
+# print(f"数据库配置: {DATABASES['default']['NAME']}@{DATABASES['default']['HOST']}")
+# print(f"管理员账号: {ADMIN_ACCOUNT}")
+# print(f"允许的主机: {ALLOWED_HOSTS}")
