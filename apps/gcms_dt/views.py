@@ -110,6 +110,12 @@ class GcmsProcessShimazu(APIView):
                 processed_results.append(file_result)
 
             # 文件处理结束，整合所有待处理数据
+            # for file_obj in processed_results:
+            #     print(file_obj["data"])
+            #     print("##########")
+
+            # 下面的逻辑会修改processed_results，故最终返回当前副本
+            processed_results_temp = copy.deepcopy(processed_results)
 
             # 获取基准RT列表（包括[rt,name,si,cas,area])
             base_rt_data = []
@@ -199,12 +205,33 @@ class GcmsProcessShimazu(APIView):
             for file_obj in processed_results:
                 processed_total_result[0].append(file_obj["file_name"])
 
+            # for file_obj in processed_results_temp:
+            #     print(file_obj["data"])
+            #     print("##########")
+            # print("----------")
             # for data in processed_total_result:
             #     print(data)
             # print(len(processed_total_result))
 
+            # 将processed_results_temp和processed_total_result转换为字典
+            single_result_head = ["RT", "CompoundName", "SI", "CAS", "Area"]
+            for file_obj in processed_results_temp:
+                file_obj["data"] = file_obj["data"][1:]
+                file_obj["data"] = [
+                    {single_result_head[i]: value for i, value in enumerate(item)}
+                    for item in file_obj["data"]
+                ]
+
+            total_result_head = processed_total_result[0]           # 获取表头
+            total_result_head.pop(4)                                # 调整，删除"Area"
+            processed_total_result = processed_total_result[1:]     # 去除最终结果的表头
+            processed_total_result = [
+                {total_result_head[i]: value for i, value in enumerate(item)}
+                for item in processed_total_result
+            ]
+
             # 将处理结果保存至数据库
-            Gcms_UserFiles.objects.create(process_id=process_id, user=user, file_type="gcms-shimazu-2010&8050", single_file_json=processed_results, total_file_json=processed_total_result)
+            Gcms_UserFiles.objects.create(process_id=process_id, user=user, file_type="gcms-shimazu-2010&8050", single_file_json=processed_results_temp, total_file_json=processed_total_result)
 
         except Exception as e:
             return Response({
@@ -216,7 +243,7 @@ class GcmsProcessShimazu(APIView):
         return Response({
             "status": "completed",
             "total_files": len(processed_results),
-            "single_results": processed_results,
+            "single_results": processed_results_temp,
             "total_result": processed_total_result
         })
 
@@ -362,6 +389,9 @@ class GcmsProcessThermo(APIView):
 
             # 文件处理结束，整合所有待处理数据
 
+            # 下面的逻辑会修改processed_results，故最终返回当前副本
+            processed_results_temp = copy.deepcopy(processed_results)
+
             # 获取基准列表（包括[RT,CompoundName,CAS,MF,SI,RSI,Area])
             base_rt_data = []
             for data in processed_results[0]["data"]:
@@ -438,12 +468,31 @@ class GcmsProcessThermo(APIView):
                 head.append(file_obj["file_name"])
             processed_total_result.insert(0, head)
 
+            # for file_obj in processed_results_temp:
+            #     print(file_obj["data"])
+            #     print("##########")
+            # print("----------")
             # for data in processed_total_result:
             #     print(data)
             # print(len(processed_total_result))
 
+            # 将processed_results_temp和processed_total_result转换为字典
+            single_result_head = ["RT", "CompoundName", "CAS", "Molecular Formula", "SI", "RSI", "Area"]
+            for file_obj in processed_results_temp:
+                file_obj["data"] = [
+                    {single_result_head[i]: value for i, value in enumerate(item)}
+                    for item in file_obj["data"]
+                ]
+
+            total_result_head = processed_total_result[0]           # 获取表头
+            processed_total_result = processed_total_result[1:]     # 去除表头元素
+            processed_total_result = [
+                {total_result_head[i]: value for i, value in enumerate(item)}
+                for item in processed_total_result
+            ]
+
             # 将处理结果保存至数据库
-            Gcms_UserFiles.objects.create(process_id=process_id, user=user, file_type="gcms-thermo", single_file_json=processed_results, total_file_json=processed_total_result)
+            Gcms_UserFiles.objects.create(process_id=process_id, user=user, file_type="gcms-thermo", single_file_json=processed_results_temp, total_file_json=processed_total_result)
 
         except Exception as e:
             return Response({
@@ -455,6 +504,6 @@ class GcmsProcessThermo(APIView):
         return Response({
             "status": "completed",
             "total_files": len(processed_results),
-            "single_results": processed_results,
+            "single_results": processed_results_temp,
             "total_result": processed_total_result
         })

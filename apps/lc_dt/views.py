@@ -109,12 +109,15 @@ class LcProcessShimazu(APIView):
                 # 添加单个文件的待处理数据对象
                 processed_results.append(file_result)
 
-            # 文件处理结束
+            # 文件处理结束，整合所有待处理数据
 
             # for pda in processed_results[0]["data"]:
             #     for data in pda:
             #         print(data)
             #     print("---")
+
+            # 下面的逻辑会修改processed_results，故最终返回当前副本
+            processed_results_temp = copy.deepcopy(processed_results)
 
             # 整合所有待处理数据
 
@@ -186,13 +189,43 @@ class LcProcessShimazu(APIView):
                 for file_obj in processed_results:
                     pda[0].append(file_obj["file_name"])
 
+            # for file_obj in processed_results_temp:
+            #     for pda in file_obj["data"]:
+            #         print(pda)
+            #     print("---")
             # for pda in processed_total_result:
             #     for data in pda:
             #         print(data)
             #     print("----")
 
+            # 将processed_results_temp和processed_total_result转换为字典
+            single_result_head = ["RT", "Area"]
+            for file_obj in processed_results_temp:
+                for pda_idx in range(len(file_obj["data"])):
+                    # 源数据
+                    origin_data = file_obj["data"][pda_idx]
+                    # 转换后数据
+                    transform_data = [
+                        {single_result_head[i]: value for i, value in enumerate(item)}
+                        for item in origin_data
+                    ]
+                    file_obj["data"][pda_idx] = transform_data
+
+            total_result_head = processed_total_result[0][0]  # 获取表头
+            for pda_idx in range(len(processed_total_result)):
+                # 去除表头元素
+                processed_total_result[pda_idx] = processed_total_result[pda_idx][1:]
+                # 源数据
+                origin_data = processed_total_result[pda_idx]
+                # 转换后数据
+                transform_data = [
+                    {total_result_head[i]: value for i, value in enumerate(item)}
+                    for item in origin_data
+                ]
+                processed_total_result[pda_idx] = transform_data
+
             # 将处理结果保存至数据库
-            Lc_UserFiles.objects.create(process_id=process_id, user=user, file_type="lc-shimazu-lc30&lc2030", single_file_json=processed_results, total_file_json=processed_total_result)
+            Lc_UserFiles.objects.create(process_id=process_id, user=user, file_type="lc-shimazu-lc30&lc2030", single_file_json=processed_results_temp, total_file_json=processed_total_result)
 
         except Exception as e:
             return Response({
@@ -204,7 +237,7 @@ class LcProcessShimazu(APIView):
         return Response({
             "status": "completed",
             "total_files": len(processed_results),
-            "single_results": processed_results,
+            "single_results": processed_results_temp,
             "total_result": processed_total_result
         })
 
@@ -300,6 +333,9 @@ class LcProcessAjl(APIView):
 
             # 文件处理结束，整合所有待处理数据
 
+            # 下面的逻辑会修改processed_results，故最终返回当前副本
+            processed_results_temp = copy.deepcopy(processed_results)
+
             # 获取基准RT列表（包括[rt,area])
             base_rt_data = []
             # 以第一个文件的数据为基准
@@ -360,12 +396,30 @@ class LcProcessAjl(APIView):
             for file_obj in processed_results:
                 processed_total_result[0].append(file_obj["file_name"])
 
+            # for file_obj in processed_results_temp:
+            #     print(file_obj["data"])
+            #     print("##########")
             # for data in processed_total_result:
             #     print(data)
             # print(len(processed_total_result))
 
+            # 将processed_results_temp和processed_total_result转换为字典
+            single_result_head = ["RT", "Area"]
+            for file_obj in processed_results_temp:
+                file_obj["data"] = [
+                    {single_result_head[i]: value for i, value in enumerate(item)}
+                    for item in file_obj["data"]
+                ]
+
+            total_result_head = processed_total_result[0]  # 获取表头
+            processed_total_result = processed_total_result[1:]  # 去除最终结果的表头
+            processed_total_result = [
+                {total_result_head[i]: value for i, value in enumerate(item)}
+                for item in processed_total_result
+            ]
+
             # 将处理结果保存至数据库
-            Lc_UserFiles.objects.create(process_id=process_id, user=user, file_type="lc-ajl-1290", single_file_json=processed_results, total_file_json=processed_total_result)
+            Lc_UserFiles.objects.create(process_id=process_id, user=user, file_type="lc-ajl-1290", single_file_json=processed_results_temp, total_file_json=processed_total_result)
 
         except Exception as e:
             return Response({
@@ -377,6 +431,6 @@ class LcProcessAjl(APIView):
         return Response({
             "status": "completed",
             "total_files": len(processed_results),
-            "single_results": processed_results,
+            "single_results": processed_results_temp,
             "total_result": processed_total_result
         })

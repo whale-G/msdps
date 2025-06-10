@@ -171,11 +171,11 @@ if ENVIRONMENT == 'development':
                 'level': 'DEBUG',
             },
             # 调试SQL查询（开发调试用）
-            'django.db.backends': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
+            # 'django.db.backends': {
+            #     'handlers': ['console'],
+            #     'level': 'DEBUG',
+            #     'propagate': False,
+            # },
         },
     }
 # 生产环境日志配置

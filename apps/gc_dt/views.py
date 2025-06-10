@@ -114,8 +114,37 @@ class GcProcess(APIView):
                         processed_total_result[seg_idx].append("ND")
                         processed_total_result[seg_idx].append("ND")
 
+            # for file in processed_results:
+            #     print(file["data"])
+            #     print("##########")
+            # print("--------")
             # for data in processed_total_result:
             #     print(data)
+
+            # 将processed_results和processed_total_result转换为字典列表
+            single_result_head = ["segName", "Area", "PPM"]
+            for file_obj in processed_results:
+                file_obj["data"] = [
+                    {single_result_head[i]: value for i, value in enumerate(item)}
+                    for item in file_obj["data"]
+                ]
+
+            total_result_head = ["segName"]
+            for file_obj in processed_results:
+                total_result_head.append(file_obj["file_name"])
+            total_result_subHead = ["Area", "PPM"]
+            result = []
+            file_count = len(total_result_head[1:])     # 文件数量
+            for data in processed_total_result:
+                main_dict = {total_result_head[0]: data[0]}     # 创建主字典
+                for idx in range(1, file_count + 1):
+                    data_idx = idx * 2 - 1      # 在data列表中的索引
+                    main_dict[total_result_head[idx]] = {
+                        total_result_subHead[0]: data[data_idx],        # Area
+                        total_result_subHead[1]: data[data_idx + 1]     # PPM
+                    }
+                    result.append(main_dict)
+            processed_total_result = result
 
             # 将处理结果保存至数据库
             Gc_UserFiles.objects.create(process_id=process_id, user=user, file_type="gc-ajl-7890", single_file_json=processed_results, total_file_json=processed_total_result)

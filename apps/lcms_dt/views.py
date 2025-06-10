@@ -108,9 +108,23 @@ class LcmsProcessAb(APIView):
                 # 添加单个文件的待处理数据对象
                 processed_results.append(file_result)
 
-            for result in processed_results:
-                print(result["data"])
-                print("----------")
+            # for result in processed_results:
+            #     print(result["data"])
+            #     print("----------")
+
+            for file_obj in processed_results:
+                for data_idx in range(len(file_obj["data"])):
+                    single_result_head = file_obj["data"][data_idx][0]  # 获取表头
+                    # 去除表头元素
+                    file_obj["data"][data_idx] = file_obj["data"][data_idx][1:]
+                    # 源数据
+                    origin_data = file_obj["data"][data_idx]
+                    # 转换后数据
+                    transform_data = [
+                        {single_result_head[i]: value for i, value in enumerate(item)}
+                        for item in origin_data
+                    ]
+                    file_obj["data"][data_idx] = transform_data
 
             # 文件处理结束，将处理结果保存至数据库
             Lcms_UserFiles.objects.create(process_id=process_id, user=user, file_type="lcms-ab", single_file_json=processed_results)
@@ -241,6 +255,24 @@ class LcmsProcessAjl(APIView):
 
                 # 添加单个文件的待处理数据对象
                 processed_results.append(file_result)
+
+            # for result in processed_results:
+            #     print(result["data"])
+            #     print("----------")
+
+            for file_obj in processed_results:
+                # 获取表头
+                single_result_head = file_obj["data"][0]
+                # 去除表头元素
+                file_obj["data"] = file_obj["data"][1:]
+                # 源数据
+                origin_data = file_obj["data"]
+                # 转换后数据
+                transform_data = [
+                    {single_result_head[i]: value for i, value in enumerate(item)}
+                    for item in origin_data
+                ]
+                file_obj["data"] = transform_data
 
             # 文件处理结束，将处理结果保存至数据库
             Lcms_UserFiles.objects.create(process_id=process_id, user=user, file_type="lcms-ajl-6470", single_file_json=processed_results)
