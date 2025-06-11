@@ -183,7 +183,7 @@ class GcmsProcessShimazu(APIView):
                             base_temp.append(data)
 
                 # 当前文件数据判断结束，处理基准列表中没有填充数据的空位，添加‘ND’
-                for data in base_temp[1:]:
+                for data in base_temp:
                     if len(data) < result_len:
                         data.append("ND")
 
