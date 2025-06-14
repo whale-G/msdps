@@ -4,27 +4,56 @@ from rest_framework import serializers
 
 
 class BaseFileSerializer(serializers.Serializer):
-    single_file_json = serializers.JSONField()
+    process_id = serializers.CharField()
     file_type = serializers.CharField()
     created_at = serializers.DateTimeField()
     model_source = serializers.CharField()  # 标识数据来源模型
 
 
 # 为每个模型创建专用序列化器
-class GcFileSerializer(BaseFileSerializer):
+
+# gc类型的列表请求序列化器
+class GcFileBaseSerializer(BaseFileSerializer):
+    model_source = serializers.CharField(default="gc")
+
+
+# gc类型的详细请求序列化器
+class GcFileDetailSerializer(BaseFileSerializer):
+    single_file_json = serializers.JSONField()
     total_file_json = serializers.JSONField()
     model_source = serializers.CharField(default="gc")
 
 
-class GcmsFileSerializer(BaseFileSerializer):
+# gcms类型的列表请求序列化器
+class GcmsFileBaseSerializer(BaseFileSerializer):
+    model_source = serializers.CharField(default="gcms")
+
+
+# gcms类型的详细请求序列化器
+class GcmsFileDetailSerializer(BaseFileSerializer):
+    single_file_json = serializers.JSONField()
     total_file_json = serializers.JSONField()
     model_source = serializers.CharField(default="gcms")
 
 
-class LcFileSerializer(BaseFileSerializer):
+# lc类型的列表请求序列化器
+class LcFileBaseSerializer(BaseFileSerializer):
+    model_source = serializers.CharField(default="lc")
+
+
+# lc类型的详细请求序列化器
+class LcFileDetailSerializer(BaseFileSerializer):
+    single_file_json = serializers.JSONField()
     total_file_json = serializers.JSONField()
     model_source = serializers.CharField(default="lc")
 
 
-class LcmsFileSerializer(BaseFileSerializer):
+# lcms类型的列表请求序列化器
+class LcmsFileBaseSerializer(BaseFileSerializer):
+    model_source = serializers.CharField(default="lcms")
+
+
+# lcms类型的详细请求序列化器
+class LcmsFileDetailSerializer(BaseFileSerializer):
+    single_file_json = serializers.JSONField()
     model_source = serializers.CharField(default="lcms")
