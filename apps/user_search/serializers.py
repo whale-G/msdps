@@ -19,8 +19,8 @@ class GcFileBaseSerializer(BaseFileSerializer):
 
 # gc类型的详细请求序列化器
 class GcFileDetailSerializer(BaseFileSerializer):
-    single_file_json = serializers.JSONField()
-    total_file_json = serializers.JSONField()
+    single_results = serializers.JSONField(source='single_file_json')
+    total_result = serializers.JSONField(source='total_file_json')
     model_source = serializers.CharField(default="gc")
 
 
@@ -31,8 +31,8 @@ class GcmsFileBaseSerializer(BaseFileSerializer):
 
 # gcms类型的详细请求序列化器
 class GcmsFileDetailSerializer(BaseFileSerializer):
-    single_file_json = serializers.JSONField()
-    total_file_json = serializers.JSONField()
+    single_results = serializers.JSONField(source='single_file_json')
+    total_result = serializers.JSONField(source='total_file_json')
     model_source = serializers.CharField(default="gcms")
 
 
@@ -43,8 +43,8 @@ class LcFileBaseSerializer(BaseFileSerializer):
 
 # lc类型的详细请求序列化器
 class LcFileDetailSerializer(BaseFileSerializer):
-    single_file_json = serializers.JSONField()
-    total_file_json = serializers.JSONField()
+    single_results = serializers.JSONField(source='single_file_json')
+    total_result = serializers.JSONField(source='total_file_json')
     model_source = serializers.CharField(default="lc")
 
 
@@ -55,5 +55,5 @@ class LcmsFileBaseSerializer(BaseFileSerializer):
 
 # lcms类型的详细请求序列化器
 class LcmsFileDetailSerializer(BaseFileSerializer):
-    single_file_json = serializers.JSONField()
+    single_results = serializers.JSONField(source='single_file_json')
     model_source = serializers.CharField(default="lcms")
