@@ -119,7 +119,7 @@ class searchForDataDetail(APIView):
                 except Lcms_UserFiles.DoesNotExist:
                     raise RecordNotFound(detail="LCMS 处理记录不存在")
                 # 序列化记录
-                file_record = GcmsFileDetailSerializer(lcms_file_record)
+                file_record = LcmsFileDetailSerializer(lcms_file_record)
             else:
                 raise ValueError("Invalid process type")
 
