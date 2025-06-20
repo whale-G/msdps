@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "scheduler",                # 定时清理模块
     "apps.user_management",     # 用户管理模块
     "apps.user_search",         # 搜索模块
+    'django_celery_results',    # celery结果存储
 ]
 
 MIDDLEWARE = [
@@ -99,6 +100,7 @@ WSGI_APPLICATION = "MSDPT_BE.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# MySQL数据库配置
 DATABASES = {
     # "default": {
     #     "ENGINE": "django.db.backends.sqlite3",
@@ -114,6 +116,23 @@ DATABASES = {
         "OPTIONS": {
             "charset": "utf8mb4",
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
+    }
+}
+
+# Redis数据库配置
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://:{os.getenv('REDIS_PASSWORD')}@{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}/{os.getenv('REDIS_DB')}",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 100,
+                "encoding": "utf-8",
+            },
+            "SOCKET_CONNECT_TIMEOUT": 5,    # 连接建立超时时间
+            "SOCKET_TIMEOUT": 5,            # 连接超时时间
         },
     }
 }
