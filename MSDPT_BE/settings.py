@@ -278,3 +278,27 @@ ADMIN_INITIAL_PASSWORD = os.getenv('ADMIN_INITIAL_PASSWORD', 'Admin123')
 # print(f"数据库配置: {DATABASES['default']['NAME']}@{DATABASES['default']['HOST']}")
 # print(f"管理员账号: {ADMIN_ACCOUNT}")
 # print(f"允许的主机: {ALLOWED_HOSTS}")
+
+# Celery配置
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
+REDIS_URL = (
+    f"redis://{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}/0"
+    if not REDIS_PASSWORD
+    else f"redis://:{REDIS_PASSWORD}@{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}/0"
+)
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Shanghai'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30分钟超时限制
+
+# 任务队列配置
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_DEFAULT_EXCHANGE = 'default'
+CELERY_TASK_DEFAULT_ROUTING_KEY = 'default'
+
+# 结果后端配置
+CELERY_RESULT_EXPIRES = 24 * 60 * 60  # 结果保存24小时
