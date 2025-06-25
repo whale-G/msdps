@@ -1,4 +1,4 @@
-# 序列化
+# 数据处理各模型的序列化器
 
 from rest_framework import serializers
 
