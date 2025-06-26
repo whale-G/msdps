@@ -18,7 +18,7 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 加载基础环境变量
+# 加载基础环境变量（通过volumes挂载的文件）
 load_dotenv(BASE_DIR / '.env')
 
 # 根据环境加载特定配置
@@ -239,10 +239,10 @@ REST_FRAMEWORK = {
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(
-        minutes=int(os.environ.get('JWT_ACCESS_MINUTES', 30))
+        minutes=int(os.getenv('JWT_ACCESS_MINUTES', 60))
     ),          # token有效期
     'REFRESH_TOKEN_LIFETIME': timedelta(
-        days=int(os.environ.get('JWT_REFRESH_DAYS', 1))
+        days=int(os.getenv('JWT_REFRESH_DAYS', 2))
     ),          # 刷新token有效期
     'USER_ID_FIELD': 'uuid',            # 指定模型中的字段名称
     'USER_ID_CLAIM': 'uuid',            # 对应token负载中的字段名
@@ -271,13 +271,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # 管理员账号配置
 ADMIN_ACCOUNT = os.getenv('ADMIN_ACCOUNT', 'admin')
 ADMIN_INITIAL_PASSWORD = os.getenv('ADMIN_INITIAL_PASSWORD', 'Admin123')
-
-# 配置验证（开发阶段）
-# print(f"\n\n当前环境: {ENVIRONMENT}")
-# print(f"DEBUG 模式: {DEBUG}")
-# print(f"数据库配置: {DATABASES['default']['NAME']}@{DATABASES['default']['HOST']}")
-# print(f"管理员账号: {ADMIN_ACCOUNT}")
-# print(f"允许的主机: {ALLOWED_HOSTS}")
 
 # Celery配置
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
