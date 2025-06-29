@@ -41,7 +41,9 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 if ENVIRONMENT == 'production' and DEBUG:
     raise ValueError("在生产环境中DEBUG必须为False")
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+# ALLOWED_HOSTS 配置
+allowed_hosts = os.getenv('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = ['*'] if allowed_hosts == '*' else [host.strip() for host in allowed_hosts.split(',') if host.strip()]
 if ENVIRONMENT == 'production' and not ALLOWED_HOSTS:
     raise ValueError("在生产环境中ALLOWED_HOSTS必须设置")
 
