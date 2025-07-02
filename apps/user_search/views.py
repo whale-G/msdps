@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from rest_framework.views import APIView
@@ -53,10 +55,16 @@ class searchForDataList(APIView):
                 serialized_item = LcmsFileBaseSerializer(item).data
                 serialized_data.append(serialized_item)
 
-            return Response({"status": "success", "result": serialized_data}, status=status.HTTP_200_OK)
+            return Response({
+                "status": "success",
+                "result": serialized_data
+            }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 # 返回指定信息的详细数据
@@ -123,7 +131,68 @@ class searchForDataDetail(APIView):
             else:
                 raise ValueError("Invalid process type")
 
-            return Response({"status": "success", "result": file_record.data}, status=status.HTTP_200_OK)
+            return Response({
+                "status": "success",
+                "result": file_record.data
+            },status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({"status": "error", 'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "status": "error",
+                'message': str(e)
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
+# 返回系统中数据处理的统计数据
+class dataProcessStatistics(APIView):
+    def get(self, request):
+        try:
+            user = request.user
+
+            if not user.is_authenticated:
+                return Response(
+                    {"error": "Authentication required"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            # 获取当前日期
+            today = timezone.now().date()
+
+            # 待统计模型
+            model_list = [Gc_UserFiles, Gcms_UserFiles, Lc_UserFiles, Lcms_UserFiles]
+
+            # 计算各数据处理模型数据量
+            model_stats = {}
+            total_count = 0
+            today_total_count = 0
+
+            # 统计每个模型数据量以及总数据量
+            for model in model_list:
+                model_name = model.__name__
+                count = model.objects.count()
+                totay_count = model.objects.filter(created_at__date=today).count()
+
+                model_stats[model_name] = {
+                    'count': count,
+                    'totay_count': totay_count,
+                }
+                total_count += count
+                today_total_count += totay_count
+
+            # 计算百分比
+            for model_name, data in model_stats.items():
+                percentage = (data['count'] / total_count) * 100 if total_count > 0 else 0
+                data['percentage'] = round(percentage, 2)   # 保留两位小数
+
+            return Response({
+                'status': 'success',
+                'total_count': total_count,
+                'today_total_count': today_total_count,
+                'model_stats': model_stats
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
