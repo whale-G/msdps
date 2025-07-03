@@ -3,8 +3,8 @@ from django.conf import settings
 
 
 class Gcms_UserFiles(models.Model):
-    # 处理记录索引（主键）
-    process_id = models.CharField(max_length=256, primary_key=True)
+    # 处理记录索引（使用默认id字段为主键）
+    process_id = models.CharField(max_length=255, unique=True)
     # 添加用户关联（使用UUID作为外键）
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

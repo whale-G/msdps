@@ -1,7 +1,5 @@
+from django.db.models import Max
 from django.utils import timezone
-
-from django.contrib.auth import get_user_model
-from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -169,15 +167,16 @@ class dataProcessStatistics(APIView):
             # 统计每个模型数据量以及总数据量
             for model in model_list:
                 model_name = model.__name__
-                count = model.objects.count()
-                totay_count = model.objects.filter(created_at__date=today).count()
+                # max_id 即 当前表中处理过的数据量总数
+                max_id = model.objects.aggregate(Max('id')).get('id__max') or 0
+                today_count = model.objects.filter(created_at__date=today).count()
 
                 model_stats[model_name] = {
-                    'count': count,
-                    'totay_count': totay_count,
+                    'count': max_id,
+                    'today_count': today_count,
                 }
-                total_count += count
-                today_total_count += totay_count
+                total_count += max_id
+                today_total_count += today_count
 
             # 计算百分比
             for model_name, data in model_stats.items():
