@@ -163,5 +163,14 @@ def process_gc_files(self, file_contents_list, user_id, process_id):
         }
         
     except Exception as e:
-        self.update_state(state='FAILURE', meta={'error': str(e)})
+        # 保存原始异常的类型和消息
+        original_exc_type = type(e).__name__
+        error_message = str(e)
+
+        self.update_state(state='FAILURE', meta={
+            'error': error_message,
+            'exc_type': original_exc_type,
+            'exc_message': error_message
+        })
+        # 直接重新抛出原始异常
         raise
