@@ -244,7 +244,16 @@ def process_lc_shimazu_files(self, file_contents_list, user_id, process_id, floa
         }
 
     except Exception as e:
-        self.update_state(state='FAILURE', meta={'error': str(e)})
+        # 保存原始异常的类型和消息
+        original_exc_type = type(e).__name__
+        error_message = str(e)
+        
+        self.update_state(state='FAILURE', meta={
+            'error': error_message,
+            'exc_type': original_exc_type,
+            'exc_message': error_message
+        })
+        # 直接重新抛出原始异常
         raise
 
 
@@ -329,10 +338,10 @@ def process_lc_agilent_files(self, file_contents_list, user_id, process_id, floa
             self.update_state(
                 state='PROGRESS',
                 meta={
-                    'current': index,  # 当前处理文件索引
-                    'total_files': total_files,  # 总文件数
-                    'file_name': file_name,  # 当前处理文件名
-                    'status': file_result["status"]  # 当前处理文件状态
+                    'current': index,                   # 当前处理文件索引
+                    'total_files': total_files,         # 总文件数
+                    'file_name': file_name,             # 当前处理文件名
+                    'status': file_result["status"]     # 当前处理文件状态
                 }
             )
             # ↑ 进度信息存入Redis，作为Result Backend的缓存
@@ -445,5 +454,14 @@ def process_lc_agilent_files(self, file_contents_list, user_id, process_id, floa
         }
 
     except Exception as e:
-        self.update_state(state='FAILURE', meta={'error': str(e)})
+        # 保存原始异常的类型和消息
+        original_exc_type = type(e).__name__
+        error_message = str(e)
+        
+        self.update_state(state='FAILURE', meta={
+            'error': error_message,
+            'exc_type': original_exc_type,
+            'exc_message': error_message
+        })
+        # 直接重新抛出原始异常
         raise
