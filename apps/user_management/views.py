@@ -64,7 +64,7 @@ class UserRegister(APIView):
             # 使用create_user创建用户（自动处理密码哈希）
             Users.objects.create_user(
                 user_account=user_account,
-                password=user_password      # 传入明文密码
+                password=user_password,      # 传入明文密码
             )
 
             return Response({
@@ -95,9 +95,9 @@ class UserLogin(APIView):
                     "message": "账号或密码不能为空"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+            user = Users.objects.get(user_account=user_account)
             # 检查用户是否存在
             try:
-                user = Users.objects.get(user_account=user_account)
                 # 检查用户是否被删除
                 if user.is_delete:
                     return Response({
@@ -118,6 +118,9 @@ class UserLogin(APIView):
                     "message": "密码错误"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+            # 检查是否为管理员账户
+            is_superuser = user.is_superuser
+
             # 生成JWT Token
             refresh = RefreshToken.for_user(user)
             # 将user_id写入token负载
@@ -126,6 +129,7 @@ class UserLogin(APIView):
             return Response({
                 "status": "success",
                 "message": "登录成功",
+                "is_superuser": is_superuser,           # 是否为管理员账户
                 "access": str(refresh.access_token),    # 短期Token
                 "refresh": str(refresh),                # 长期Token（用于刷新）
                 "force_password_change": user.force_password_change  # 返回强制修改密码标志
@@ -298,14 +302,19 @@ class UserDeleteView(APIView):
         try:
             user = Users.objects.get(uuid=uuid, is_delete=False)
 
-            # 不允许删除超级管理员
+            # 确保系统至少保留一个管理员账户
             if user.is_superuser:
-                return Response({
-                    'status': 'error',
-                    'message': '不能删除超级管理员账户'
-                }, status=status.HTTP_403_FORBIDDEN)
+                admin_count = Users.objects.filter(
+                    is_superuser=True,
+                    is_delete=False
+                ).exclude(uuid=uuid).count()
+                if admin_count == 0:
+                    return Response({
+                        'status': 'error',
+                        'message': '系统必须至少保留一个管理员账户'
+                    }, status=status.HTTP_403_FORBIDDEN)
 
-            # 不允许删除自己
+            # 不允许删除当前登录的账户
             if user == request.user:
                 return Response({
                     'status': 'error',
@@ -352,10 +361,10 @@ class UserUpdateView(APIView):
             user = Users.objects.get(uuid=uuid, is_delete=False)
 
             # 不允许修改超级管理员的管理员权限
-            if user.is_superuser and 'is_superuser' in request.data:
+            if user.is_superuser and 'is_superuser' in request.data and not request.data['is_superuser']:
                 return Response({
                     'status': 'error',
-                    'message': '不能修改超级管理员的权限'
+                    'message': '不能降低超级管理员的权限'
                 }, status=status.HTTP_403_FORBIDDEN)
 
             # 如果要修改管理员权限，确保至少保留一个管理员
@@ -372,6 +381,15 @@ class UserUpdateView(APIView):
 
             serializer = UsersSerializer(user, data=request.data, partial=True)
             if serializer.is_valid():
+                # 手动更新用户对象
+                if 'is_superuser' in request.data:
+                    user.is_superuser = request.data['is_superuser']
+                    user.is_staff = request.data['is_superuser']  # 同步更新is_staff
+                if 'user_account' in request.data:
+                    user.user_account = request.data['user_account']
+                if 'password' in request.data:
+                    user.set_password(request.data['password'])
+
                 serializer.save()
                 return Response({
                     'status': 'success',
