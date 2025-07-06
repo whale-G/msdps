@@ -9,8 +9,9 @@ class UsersSerializer(serializers.ModelSerializer):
             'uuid',                     # 主键
             'user_name',                # 用户昵称
             'user_account',             # 账号
+            'password',                 # 密码
             'avatar_url',               # 头像
-            'is_staff',                 # 是否为管理员
+            'is_superuser',             # 是否为管理员
             'is_delete',                # 是否删除
             'created_at',               # 创建时间
             'force_password_change'     # 是否强制修改密码

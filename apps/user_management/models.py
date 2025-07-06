@@ -23,6 +23,10 @@ class CustomUserManager(BaseUserManager):
         if not user_account:
             raise ValueError('必须提供用户账号！')
 
+        # 设置默认值
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+
         user = self.model(
             user_account=user_account,
             **extra_fields
@@ -72,3 +76,8 @@ class Users(AbstractUser):
 
     class Meta:
         db_table = 'users'    # 手动指定数据库表名
+
+    def save(self, *args, **kwargs):
+        # 确保 is_staff 与 is_superuser 保持一致
+        self.is_staff = self.is_superuser
+        super().save(*args, **kwargs)
