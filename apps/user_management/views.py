@@ -251,10 +251,7 @@ class UserCreateView(APIView):
         {
             "user_account": "string",    # 必填，用户账号（手机号或邮箱）
             "password": "string",        # 必填，密码
-            "user_name": "string",       # 选填，用户昵称
-            "avatar_url": "string",      # 选填，头像URL
-            "is_staff": boolean,         # 选填，是否为管理员
-            "is_active": boolean         # 选填，是否激活
+            "is_superuser": boolean,     # 必填，是否为管理员
         }
         """
         try:
@@ -346,10 +343,8 @@ class UserUpdateView(APIView):
         PUT /admin/users/<uuid:uuid>/update/
         请求体：
         {
-            "user_name": "string",       # 选填，用户昵称
             "user_account": "string",    # 选填：用户账号
-            "avatar_url": "string",      # 选填，头像URL
-            "is_staff": boolean,         # 选填，是否为管理员
+            "is_superuser": boolean,     # 选填，是否为管理员
             "password": "string"         # 选填，新密码
         }
         """
@@ -357,16 +352,16 @@ class UserUpdateView(APIView):
             user = Users.objects.get(uuid=uuid, is_delete=False)
 
             # 不允许修改超级管理员的管理员权限
-            if user.is_superuser and 'is_staff' in request.data:
+            if user.is_superuser and 'is_superuser' in request.data:
                 return Response({
                     'status': 'error',
                     'message': '不能修改超级管理员的权限'
                 }, status=status.HTTP_403_FORBIDDEN)
 
             # 如果要修改管理员权限，确保至少保留一个管理员
-            if 'is_staff' in request.data and not request.data['is_staff']:
+            if 'is_superuser' in request.data and not request.data['is_superuser']:
                 admin_count = Users.objects.filter(
-                    is_staff=True,
+                    is_superuser=True,
                     is_delete=False
                 ).exclude(uuid=uuid).count()
                 if admin_count == 0:
